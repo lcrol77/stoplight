@@ -1,30 +1,57 @@
-import { useRef, useState } from 'react'
+import { RefObject, useEffect, useRef, useState } from 'react'
 import './App.css'
 
+enum Color {
+    RED,
+    YELLOW,
+    GREEN
+}
+
+const TIME_OUTS = {
+    0: 30 * 1000,
+    1: 10 * 1000,
+    2: 120 * 1000
+}
+
+interface LightProps {
+    color: string
+    activeColor: Color
+    thisColor: Color
+}
+
 function StopLight() {
-    const [state, setState] = useState({
-        redIsActive: true,
-        yellowIsActive: false,
-        greenIsActive: false,
-    });
-    const timerId = useRef(null);
+    const [activeColor, setActiveColor] = useState(Color.GREEN);
+    const intervalRef: RefObject<number | null> = useRef(null);
+
+    useEffect(() => {
+        if (intervalRef.current != null) {
+            clearInterval(intervalRef.current);
+        }
+        intervalRef.current = setInterval(() => {
+            progressLights()
+        }, TIME_OUTS[activeColor]);
+        return ()=>clearInterval(intervalRef.current!);
+    }, [activeColor]);
+
     const handleClick = () => {
         progressLights();
     }
+
     const progressLights = () => {
-        if (state.redIsActive) {
-            setState({ ...state, redIsActive: false, yellowIsActive: true });
-        } else if (state.yellowIsActive) {
-            setState({ ...state, yellowIsActive: false, greenIsActive: true });
-        } else if (state.greenIsActive) {
-            setState({ ...state, greenIsActive: false, redIsActive: true });
+        if (activeColor === Color.RED) {
+            setActiveColor(Color.YELLOW);
+        } else if (activeColor === Color.YELLOW) {
+            setActiveColor(Color.GREEN);
+        } else if (activeColor === Color.GREEN) {
+            setActiveColor(Color.RED);
         }
     }
+
     return (
         <div>
-            <Light color="red" isActive={state.redIsActive} />
-            <Light color="yellow" isActive={state.yellowIsActive} />
-            <Light color="green" isActive={state.greenIsActive} />
+            <Light color="red" activeColor={activeColor} thisColor={Color.RED} />
+            <Light color="yellow" activeColor={activeColor} thisColor={Color.YELLOW} />
+            <Light color="green" activeColor={activeColor} thisColor={Color.GREEN} />
             <button style={{ marginTop: 80 }} onClick={handleClick}>
                 change light
             </button>
@@ -32,16 +59,11 @@ function StopLight() {
     )
 }
 
-interface LightProps {
-    color: string
-    isActive: boolean
-}
-
-const Light: React.FC<LightProps> = ({ color, isActive }) => {
+const Light: React.FC<LightProps> = ({ color, activeColor, thisColor }) => {
     return (
         <>
             {
-                isActive ?
+                activeColor === thisColor ?
                     <div style={{ width: 200, height: 200, background: color }} /> :
                     <div style={{ width: 200, height: 200, background: "grey" }} />
             }
